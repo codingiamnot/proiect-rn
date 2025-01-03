@@ -6,7 +6,7 @@ import numpy as np
 autoencoder = load_model('autoencoder_model.keras')
 
 
-image = np.load(f"Images\\image200.npy", allow_pickle=True)
+image = np.load(f"Images\\image20.npy", allow_pickle=True)
 plt.imshow(image)
 plt.axis('off')
 plt.show()
