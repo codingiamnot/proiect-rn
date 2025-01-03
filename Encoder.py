@@ -12,8 +12,6 @@ def load_images():
 
     return np.array(ans)
 
-from tensorflow.keras import layers, models
-
 def create_autoencoder(input_shape):
     input_img = layers.Input(shape=input_shape)
 
@@ -26,17 +24,15 @@ def create_autoencoder(input_shape):
     x = layers.MaxPooling2D((2, 2), padding='same')(x)  # (64, 36, 128)
     x = layers.Conv2D(256, (3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling2D((2, 2), padding='same')(x)  # (32, 18, 256)
+    x = layers.Conv2D(512, (3, 3), activation='relu', padding='same')(x)
+    x = layers.MaxPooling2D((2, 2), padding='same')(x)  # (16, 9, 512)
 
-    # Additional downsampling for smaller bottleneck
-    x = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-    x = layers.MaxPooling2D((2, 2), padding='same')(x)  # (16, 9, 128)
-
-    # Bottleneck (latent space representation)
-    encoded = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)  # (16, 9, 64)
+    # Bottleneck
+    encoded = layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)  # (8, 8, 16) -> ~1000 features
 
     # Decoder
-    x = layers.Conv2DTranspose(128, (3, 3), activation='relu', padding='same')(encoded)
-    x = layers.UpSampling2D((2, 2))(x)  # (32, 18, 128)
+    x = layers.Conv2DTranspose(512, (3, 3), activation='relu', padding='same')(encoded)  # (16, 9, 512)
+    x = layers.UpSampling2D((2, 2))(x)  # (32, 18, 512)
     x = layers.Conv2DTranspose(256, (3, 3), activation='relu', padding='same')(x)
     x = layers.UpSampling2D((2, 2))(x)  # (64, 36, 256)
     x = layers.Conv2DTranspose(128, (3, 3), activation='relu', padding='same')(x)
@@ -55,6 +51,9 @@ def create_autoencoder(input_shape):
     return autoencoder
 
 
+
+
+
 images = load_images()
 
 images = images.astype('float32') / 255.0
@@ -67,7 +66,7 @@ autoencoder.summary()
 
 autoencoder.fit(
     X_train, X_train,
-    epochs=10,
+    epochs=20,
     batch_size=10,
     validation_data=(X_val, X_val),
     shuffle=True)
