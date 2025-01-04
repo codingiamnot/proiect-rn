@@ -1,16 +1,18 @@
 from tensorflow.keras.models import *
 import matplotlib.pyplot as plt
 import numpy as np
+from win32comext.adsi.demos.scp import verbose
 
 autoencoder = load_model('autoencoder_model.keras')
 
 encoder = Model(inputs=autoencoder.input, outputs=autoencoder.get_layer('conv2d_5').output)
 
 
-def encode_image(image_file):
-    image = np.load(image_file, allow_pickle=True)
+def encode_image(image):
     image = np.expand_dims(image, axis=0)
-    encoded_image = encoder.predict(image)
+    encoded_image = encoder.predict(image, verbose=0)
     return encoded_image[0].reshape(-1)
 
-encode_image("Images\\image20.npy")
+
+image = np.load("Images\\image20.npy", allow_pickle=True)
+encode_image(image)
