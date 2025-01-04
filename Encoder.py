@@ -71,4 +71,4 @@ autoencoder.fit(
     validation_data=(X_val, X_val),
     shuffle=True)
 
-autoencoder.save('autoencoder_model.keras')
+#autoencoder.save('autoencoder_model.keras')

@@ -52,6 +52,12 @@ def play_flappy_bird():
         pygame.display.flip()
 
         obs, reward, terminated, _, info = env.step(action)
+
+        if reward > 0:
+            reward += 10  #bonus for passing pipes
+        elif terminated:  #the bird hits the ground or a pipe
+            reward -= 20  #penalize heavily for losing
+
         if terminated:
             print("Game Over!")
             obs, _ = env.reset()
