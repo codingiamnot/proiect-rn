@@ -1,10 +1,9 @@
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Input
+import tensorflow as tf
 import gymnasium as gym
 import flappy_bird_gymnasium
 import random
-import numpy as np
-from torch.backends.mkl import verbose
 
 from UseEncoder import *
 import pygame
@@ -18,7 +17,7 @@ def create_q_network(input_dim, output_dim):
         Dense(128, activation='relu'),
         Dense(output_dim, activation='linear')  # Output Q-values for each action
     ])
-    model.compile(optimizer='adam', loss='mse')
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), loss='mse')
     return model
 
 
@@ -27,14 +26,53 @@ gamma = 0.9         # Discount factor
 epsilon = 1        # Initial exploration rate
 epsilon_min = 0.1    # Minimum exploration rate
 epsilon_decay = 0.995  # Decay factor for exploration
-learning_rate = 0.001
-batch_size = 4
+learning_rate = 1.
+batch_size = 8
 memory = []          # Replay memory for experience replay
 max_memory = 2000    # Max size of memory
-input_dim = 2304    # Encoded state size (~1000 features)
+input_dim = 288 #2304    # Encoded state size (~1000 features)
 output_dim = 2       # Actions: [Flap, Do Nothing]
+last_nr_play = 16
 
 q_network = create_q_network(input_dim, output_dim)
+
+def load_memory(nrPlays):
+    for id in range(nrPlays):
+        file_name = f"HumanPlay/play{id}.txt"
+        file = open(file_name, "r")
+        words = file.read()
+        words = words.split(' ')
+        nxt_word = 0
+
+        nr_moments = int(words[nxt_word])
+        nxt_word += 1
+
+        n_play = []
+
+        for moment_id in range(nr_moments):
+
+            image = []
+            for id in range(input_dim):
+                x = float(words[nxt_word])
+                nxt_word += 1
+
+                image.append(x)
+
+            image = np.array(image)
+            image = np.expand_dims(image, axis=0)
+
+            action = int(words[nxt_word])
+            nxt_word += 1
+
+            reward = float(words[nxt_word])
+            nxt_word += 1
+
+            n_play.append((image, action, reward))
+
+        memory.append(n_play)
+
+        file.close()
+
 
 def get_action(state):
     if random.uniform(0, 1) < epsilon:
@@ -79,8 +117,29 @@ def play_by_hand(count_plays):
 
     env.close()
 
+    nr = last_nr_play
+    for play in memory:
+        file_name = f"HumanPlay/play{nr}.txt"
+        file = open(file_name, "w")
+
+        file.write(f"{len(play)} ")
+        for moment in play:
+            #print(moment)
+
+            for x in moment[0][0]:
+                #print(x)
+                file.write(f"{x} ")
+
+            file.write(f"{moment[1]} ")
+            file.write(f"{moment[2]} ")
+
+        nr += 1
+        file.close()
+
+
 
 def play(count_plays, see_play = False):
+    count_frame = 0
     if see_play:
         screen = pygame.display.set_mode((288, 512))
     env = gym.make("FlappyBird-v0", render_mode="rgb_array", use_lidar=False)
@@ -94,7 +153,11 @@ def play(count_plays, see_play = False):
             encoded_image = encode_image(image)
             encoded_image = np.expand_dims(encoded_image, axis=0)
 
-            action = get_action(encoded_image)
+            count_frame = count_frame + 1
+            action = 0
+            if count_frame == 3:
+                count_frame = 0
+                action = get_action(encoded_image)
 
             if see_play:
                 surface = pygame.surfarray.make_surface(image.transpose(1, 0, 2))
@@ -117,34 +180,45 @@ def play(count_plays, see_play = False):
     env.close()
 
 
-def train_q_network():
+def train_q_network(nr_interations):
     if len(memory) < batch_size:
         return
 
-    batch = random.sample(memory, batch_size)
-    for play_id in range(batch_size):
-        for state_id in range(len(batch[play_id])):
+    states = []
+    targets = []
 
-            state, action, reward = batch[play_id][state_id]
+    for iteration in range(nr_interations):
+        batch = random.sample(memory, batch_size)
+        for play_id in range(batch_size):
+            for state_id in range(len(batch[play_id])):
 
-            if state_id == len(batch[play_id]) - 1:
-                q_network.fit(state, np.array([[reward, reward]]), epochs=1, verbose=0)
-            else:
-                next_state = batch[play_id][state_id + 1][0]
-                target = reward + gamma * np.max(q_network.predict(next_state))
-                target_f = q_network.predict(state)
-                target_f[0][action] = target
-                q_network.fit(state, target_f, epochs=1, verbose=0)
+                state, action, reward = batch[play_id][state_id]
+
+                if state_id == len(batch[play_id]) - 1:
+                    states.append(state[0])
+                    targets.append(np.array([reward, reward]))
+                else:
+                    next_state = batch[play_id][state_id + 1][0]
+                    target = reward + gamma * np.max(q_network.predict(next_state, verbose=0))
+                    target_f = q_network.predict(state, verbose=0)
+                    target_f[0][action] = target
+                    states.append(state[0])
+                    targets.append(target_f[0])
+
+        print(iteration)
+        q_network.fit(np.array(states), np.array(targets), epochs=4, verbose=1)
 
 def train():
     global epsilon
 
     #play(5,True)
-    play_by_hand(16)
-    for i in range(4):
-        train_q_network()
+    #play_by_hand(16)
+    train_q_network(64)
     epsilon = 0
-    memory.clear()
+    #memory.clear()
     play(10,True)
 
+#play_by_hand(16)
+memory.clear()
+load_memory(32)
 train()

@@ -12,6 +12,8 @@ def load_images():
 
     return np.array(ans)
 
+from tensorflow.keras import layers, models
+
 def create_autoencoder(input_shape):
     input_img = layers.Input(shape=input_shape)
 
@@ -28,7 +30,8 @@ def create_autoencoder(input_shape):
     x = layers.MaxPooling2D((2, 2), padding='same')(x)  # (16, 9, 512)
 
     # Bottleneck
-    encoded = layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)  # (8, 8, 16) -> ~1000 features
+    # Output: (16, 9, 2) = 288 features
+    encoded = layers.Conv2D(2, (3, 3), activation='relu', padding='same')(x)
 
     # Decoder
     x = layers.Conv2DTranspose(512, (3, 3), activation='relu', padding='same')(encoded)  # (16, 9, 512)
@@ -54,6 +57,7 @@ def create_autoencoder(input_shape):
 
 
 
+
 images = load_images()
 
 images = images.astype('float32') / 255.0
@@ -71,4 +75,4 @@ autoencoder.fit(
     validation_data=(X_val, X_val),
     shuffle=True)
 
-#autoencoder.save('autoencoder_model.keras')
+autoencoder.save('autoencoder_model2.keras')

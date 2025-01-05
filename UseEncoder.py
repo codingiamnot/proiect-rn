@@ -1,9 +1,7 @@
 from tensorflow.keras.models import *
-import matplotlib.pyplot as plt
 import numpy as np
-from win32comext.adsi.demos.scp import verbose
 
-autoencoder = load_model('autoencoder_model.keras')
+autoencoder = load_model('autoencoder_model2.keras')
 
 encoder = Model(inputs=autoencoder.input, outputs=autoencoder.get_layer('conv2d_5').output)
 

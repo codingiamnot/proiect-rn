@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-autoencoder = load_model('autoencoder_model.keras')
+autoencoder = load_model('autoencoder_model2.keras')
 
 
 image = np.load(f"Images\\image20.npy", allow_pickle=True)
