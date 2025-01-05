@@ -15,23 +15,23 @@ def create_q_network(input_dim, output_dim):
         Input(shape=(input_dim,)),
         Dense(128, activation='relu'),
         Dense(128, activation='relu'),
-        Dense(output_dim, activation='linear')  # Output Q-values for each action
+        Dense(output_dim, activation='linear')
     ])
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), loss='mse')
     return model
 
 
-# Hyperparameters
+
 gamma = 0.9         # Discount factor
 epsilon = 1        # Initial exploration rate
 epsilon_min = 0.1    # Minimum exploration rate
-epsilon_decay = 0.995  # Decay factor for exploration
+epsilon_decay = 0.95  # Decay factor for exploration
 learning_rate = 1.
 batch_size = 8
-memory = []          # Replay memory for experience replay
+memory = []
 max_memory = 2000    # Max size of memory
-input_dim = 288 #2304    # Encoded state size (~1000 features)
-output_dim = 2       # Actions: [Flap, Do Nothing]
+input_dim = 288
+output_dim = 2
 last_nr_play = 16
 
 q_network = create_q_network(input_dim, output_dim)
@@ -105,9 +105,9 @@ def play_by_hand(count_plays):
             obs, reward, terminated, _, info = env.step(action)
 
             if reward > 0:
-                reward += 10  # bonus for passing pipes
-            elif terminated:  # the bird hits the ground or a pipe
-                reward -= 20  # penalize heavily for losing
+                reward += 10
+            elif terminated:
+                reward -= 20
 
             new_play.append((encoded_image, action, reward))
 
@@ -124,10 +124,8 @@ def play_by_hand(count_plays):
 
         file.write(f"{len(play)} ")
         for moment in play:
-            #print(moment)
 
             for x in moment[0][0]:
-                #print(x)
                 file.write(f"{x} ")
 
             file.write(f"{moment[1]} ")
@@ -190,6 +188,13 @@ def train_q_network(nr_interations):
     for iteration in range(nr_interations):
         batch = random.sample(memory, batch_size)
         for play_id in range(batch_size):
+            states_q = []
+            for state_id in range(len(batch[play_id])):
+                states_q.append(batch[play_id][state_id][0][0])
+
+            states_q = np.array(states_q)
+            q_values = q_network.predict(states_q, verbose=0)
+
             for state_id in range(len(batch[play_id])):
 
                 state, action, reward = batch[play_id][state_id]
@@ -198,27 +203,34 @@ def train_q_network(nr_interations):
                     states.append(state[0])
                     targets.append(np.array([reward, reward]))
                 else:
-                    next_state = batch[play_id][state_id + 1][0]
-                    target = reward + gamma * np.max(q_network.predict(next_state, verbose=0))
-                    target_f = q_network.predict(state, verbose=0)
-                    target_f[0][action] = target
+                    target = reward + gamma * np.max(q_values[state_id + 1])
+                    target_f = q_values[state_id]
+                    target_f[action] = target
                     states.append(state[0])
-                    targets.append(target_f[0])
+                    targets.append(target_f)
 
         print(iteration)
         q_network.fit(np.array(states), np.array(targets), epochs=4, verbose=1)
 
-def train():
+def train(nr_interations, epochs):
     global epsilon
+    global memory
 
-    #play(5,True)
-    #play_by_hand(16)
-    train_q_network(64)
-    epsilon = 0
-    #memory.clear()
-    play(10,True)
+    memory.clear()
+    load_memory(32)
+
+    for i in range(nr_interations):
+        train_q_network(epochs)
+        if i % 10 == 0:
+            play(1, True)
+        else:
+            play(10,False)
+
+        if len(memory) > max_memory:
+            random.shuffle(memory)
+            memory = memory[:-10]
+
+        epsilon = epsilon * epsilon_decay
 
 #play_by_hand(16)
-memory.clear()
-load_memory(32)
-train()
+train(11,16)

@@ -4,15 +4,13 @@ import numpy as np
 
 
 def load_images():
-    nr_images = 229
+    nr_images = 1024
     ans = []
 
     for id in range(nr_images):
         ans.append( np.load(f"Images\\image{id+1}.npy", allow_pickle=True))
 
     return np.array(ans)
-
-from tensorflow.keras import layers, models
 
 def create_autoencoder(input_shape):
     input_img = layers.Input(shape=input_shape)
@@ -30,8 +28,8 @@ def create_autoencoder(input_shape):
     x = layers.MaxPooling2D((2, 2), padding='same')(x)  # (16, 9, 512)
 
     # Bottleneck
-    # Output: (16, 9, 2) = 288 features
-    encoded = layers.Conv2D(2, (3, 3), activation='relu', padding='same')(x)
+    # Output: (16, 16, 4) = 1024 features
+    encoded = layers.Conv2D(4, (3, 3), activation='relu', padding='same')(x)
 
     # Decoder
     x = layers.Conv2DTranspose(512, (3, 3), activation='relu', padding='same')(encoded)  # (16, 9, 512)
@@ -56,10 +54,7 @@ def create_autoencoder(input_shape):
 
 
 
-
-
 images = load_images()
-
 images = images.astype('float32') / 255.0
 
 X_train, X_val = train_test_split(images, test_size=0.1)
@@ -70,9 +65,9 @@ autoencoder.summary()
 
 autoencoder.fit(
     X_train, X_train,
-    epochs=20,
-    batch_size=10,
+    epochs=32,
+    batch_size=32,
     validation_data=(X_val, X_val),
     shuffle=True)
 
-autoencoder.save('autoencoder_model2.keras')
+autoencoder.save('autoencoder_model4.keras')

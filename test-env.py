@@ -10,9 +10,9 @@ import pandas as pd
 import numpy as np
 
 screen = pygame.display.set_mode((288, 512))
-nrSavedImages = 138
+nrSavedImages = 1058
 lastSaved = -100
-currentImage = -1
+currentImage = 0
 
 def save(image):
     global nrSavedImages
@@ -39,11 +39,11 @@ def play_flappy_bird():
 
         image = env.render()
 
-        currentImage += 1
-
-        if currentImage - lastSaved > 5:
+        if currentImage - lastSaved > 3:
             save(image)
             lastSaved = currentImage
+
+        currentImage += 1
 
         surface = pygame.surfarray.make_surface(image.transpose(1,0,2))
 
