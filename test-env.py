@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 
 screen = pygame.display.set_mode((288, 512))
-nrSavedImages = 1058
+nrSavedImages = 1024
 lastSaved = -100
 currentImage = 0
 
@@ -39,7 +39,7 @@ def play_flappy_bird():
 
         image = env.render()
 
-        if currentImage - lastSaved > 3:
+        if currentImage > 10 and currentImage - lastSaved > 3:
             save(image)
             lastSaved = currentImage
 

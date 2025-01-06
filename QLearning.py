@@ -23,30 +23,30 @@ def create_q_network(input_dim, output_dim):
 
 
 gamma = 0.9         # Discount factor
-epsilon = 1        # Initial exploration rate
+epsilon = 0.1        # Initial exploration rate
 epsilon_min = 0.1    # Minimum exploration rate
 epsilon_decay = 0.95  # Decay factor for exploration
 learning_rate = 1.
 batch_size = 8
 memory = []
 max_memory = 2000    # Max size of memory
-input_dim = 288
+input_dim = 576#288
 output_dim = 2
-last_nr_play = 16
+last_nr_play = 0
 
 q_network = create_q_network(input_dim, output_dim)
 
 def load_memory(nrPlays):
     for id in range(nrPlays):
-        file_name = f"HumanPlay/play{id}.txt"
+        file_name = f"HumanPlay2/play{id}.txt"
         file = open(file_name, "r")
         words = file.read()
         words = words.split(' ')
         nxt_word = 0
 
         nr_moments = int(words[nxt_word])
-        nxt_word += 1
 
+        nxt_word += 1
         n_play = []
 
         for moment_id in range(nr_moments):
@@ -119,7 +119,7 @@ def play_by_hand(count_plays):
 
     nr = last_nr_play
     for play in memory:
-        file_name = f"HumanPlay/play{nr}.txt"
+        file_name = f"HumanPlay2/play{nr}.txt"
         file = open(file_name, "w")
 
         file.write(f"{len(play)} ")
@@ -217,14 +217,13 @@ def train(nr_interations, epochs):
     global memory
 
     memory.clear()
-    load_memory(32)
+    load_memory(5)
 
     for i in range(nr_interations):
+        print(f'iteration: {i+1}/{nr_interations}')
+
         train_q_network(epochs)
-        if i % 10 == 0:
-            play(1, True)
-        else:
-            play(10,False)
+        play(10,False)
 
         if len(memory) > max_memory:
             random.shuffle(memory)
@@ -233,4 +232,9 @@ def train(nr_interations, epochs):
         epsilon = epsilon * epsilon_decay
 
 #play_by_hand(16)
-train(11,16)
+train(1,4)
+
+#epsilon = 0
+#play(5, True)
+
+q_network.save('q_network_model.keras')
