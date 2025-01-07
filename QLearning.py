@@ -39,9 +39,11 @@ def get_action(state, print_qvalue=False):
         return random.choices([0,1], [3.7/4, 0.3/4], k=1)[0]  # Random action
 
     state = np.expand_dims(state, axis=0)
-    q_values = q_network.predict(state, verbose = 0)
+    q_values = q_network.predict(state, verbose = 0)[0]
     if print_qvalue:
-        print(f'Predicted: {q_values}')
+        ans = np.argmax(q_values)
+        print(f'Predicted: {q_values}', ans)
+
     return np.argmax(q_values)
 
 
@@ -128,7 +130,7 @@ def train(nr_interations, nr_trains):
         print(f'Iteration: {i+1}/{nr_interations}')
         print(f'epsilon: {epsilon}')
 
-        for i in range(nr_trains):
+        for j in range(nr_trains):
             train_q_network()
         
         play(10)
@@ -145,13 +147,15 @@ def train(nr_interations, nr_trains):
         if i%10 == 0:
             q_network.save("lidar_model.keras")
 
+    q_network.save("lidar_model.keras")
 
 
-play(10)
-train(100, 10)
+
+#play(50)
+#train(100, 10)
+#epsilon = 0
+#play(5, True, True)
+
+q_network = load_model("lidar_model.keras")
 epsilon = 0
 play(5, True, True)
-
-#q_network = load_model("lidar_model.keras")
-#epsilon = 1
-#play(5, True, True)
