@@ -235,12 +235,12 @@ def train(nr_interations, epochs):
     print(f'epsilon: {epsilon}')
 
 #play_by_hand(16)
-train(64,1)
-q_network.save('q_network_model_test.keras')
+#train(64,1)
+#q_network.save('q_network_model_test.keras')
 
-#q_network = load_model('q_network_model_test.keras')
+q_network = load_model('q_network_model_test.keras')
 
-#epsilon = 0
-#play(5, True, True)
+epsilon = 0
+ play(5, True, True)
 
 
