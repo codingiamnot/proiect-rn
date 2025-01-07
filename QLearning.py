@@ -1,4 +1,5 @@
 from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import *
 from tensorflow.keras.layers import Dense, Input
 import tensorflow as tf
 import gymnasium as gym
@@ -10,29 +11,30 @@ import pygame
 import time
 import keyboard
 
-def create_q_network(input_dim, output_dim):
-    model = Sequential([
-        Input(shape=(input_dim,)),
-        Dense(128, activation='relu'),
-        Dense(128, activation='relu'),
-        Dense(output_dim, activation='linear')
-    ])
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), loss='mse')
-    return model
-
-
-
 gamma = 0.9         # Discount factor
-epsilon = 0.1        # Initial exploration rate
+epsilon = 0.8        # Initial exploration rate
 epsilon_min = 0.1    # Minimum exploration rate
-epsilon_decay = 0.95  # Decay factor for exploration
-learning_rate = 1.
+epsilon_decay = 0.995  # Decay factor for exploration
+learning_rate = 0.1
 batch_size = 8
 memory = []
 max_memory = 2000    # Max size of memory
 input_dim = 576#288
 output_dim = 2
 last_nr_play = 0
+
+def create_q_network(input_dim, output_dim):
+    model = Sequential([
+        Input(shape=(input_dim,)),
+        Dense(128, activation='relu'),
+        Dense(128, activation='relu'),
+        Dense(64, activation='relu'),
+        Dense(16, activation='relu'),
+        Dense(output_dim, activation='linear')
+    ])
+    global learning_rate
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate), loss='mse')
+    return model
 
 q_network = create_q_network(input_dim, output_dim)
 
@@ -74,10 +76,13 @@ def load_memory(nrPlays):
         file.close()
 
 
-def get_action(state):
+def get_action(state, print_qvalue):
     if random.uniform(0, 1) < epsilon:
-        return random.choices([0,1], [19/20, 1/20], k=1)[0]  # Random action
+        return random.choices([0,1], [10/20, 10/20], k=1)[0]  # Random action
+
     q_values = q_network.predict(state, verbose = 0)
+    if print_qvalue:
+        print(f'Predicted: {q_values}')
     return np.argmax(q_values)
 
 def play_by_hand(count_plays):
@@ -107,7 +112,7 @@ def play_by_hand(count_plays):
             if reward > 0:
                 reward += 10
             elif terminated:
-                reward -= 20
+                reward -= 100
 
             new_play.append((encoded_image, action, reward))
 
@@ -136,7 +141,7 @@ def play_by_hand(count_plays):
 
 
 
-def play(count_plays, see_play = False):
+def play(count_plays, see_play = False, print_qvalues = False):
     count_frame = 0
     if see_play:
         screen = pygame.display.set_mode((288, 512))
@@ -153,9 +158,9 @@ def play(count_plays, see_play = False):
 
             count_frame = count_frame + 1
             action = 0
-            if count_frame == 3:
+            if count_frame == 5:
                 count_frame = 0
-                action = get_action(encoded_image)
+                action = get_action(encoded_image, print_qvalues)
 
             if see_play:
                 surface = pygame.surfarray.make_surface(image.transpose(1, 0, 2))
@@ -163,11 +168,6 @@ def play(count_plays, see_play = False):
                 pygame.display.flip()
 
             obs, reward, terminated, _, info = env.step(action)
-
-            if reward > 0:
-                reward += 10  # bonus for passing pipes
-            elif terminated:  # the bird hits the ground or a pipe
-                reward -= 20  # penalize heavily for losing
 
             new_play.append((encoded_image, action, reward))
 
@@ -217,24 +217,30 @@ def train(nr_interations, epochs):
     global memory
 
     memory.clear()
-    load_memory(5)
+    #load_memory(5)
 
     for i in range(nr_interations):
-        print(f'iteration: {i+1}/{nr_interations}')
+        print(f'Iteration: {i+1}/{nr_interations}')
 
         train_q_network(epochs)
-        play(10,False)
+        play(10)
 
         if len(memory) > max_memory:
             random.shuffle(memory)
             memory = memory[:-10]
 
-        epsilon = epsilon * epsilon_decay
+        if epsilon > epsilon_min:
+            epsilon = epsilon * epsilon_decay
+
+    print(f'epsilon: {epsilon}')
 
 #play_by_hand(16)
-train(1,4)
+train(64,1)
+q_network.save('q_network_model_test.keras')
+
+#q_network = load_model('q_network_model_test.keras')
 
 #epsilon = 0
-#play(5, True)
+#play(5, True, True)
 
-q_network.save('q_network_model.keras')
+

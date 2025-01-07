@@ -6,8 +6,8 @@ import time
 autoencoder = load_model('autoencoder_model4.keras')
 
 
-for i in range(1):
-    image = np.load(f"Images\\image{i+1024}.npy", allow_pickle=True)
+for i in range(1024):
+    image = np.load(f"Images\\image{i+1}.npy", allow_pickle=True)
     plt.imshow(image)
     plt.axis('off')
     plt.show()
