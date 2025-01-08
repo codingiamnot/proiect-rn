@@ -9,9 +9,9 @@ import pygame
 import numpy as np
 
 gamma = 0.9         # Discount factor
-epsilon = 0.8        # Initial exploration rate
+epsilon = 0.5        # Initial exploration rate
 epsilon_min = 0.1    # Minimum exploration rate
-epsilon_decay = 0.995  # Decay factor for exploration
+epsilon_decay = 0.99  # Decay factor for exploration
 learning_rate = 0.1
 batch_size = 100
 memory = []
@@ -19,13 +19,17 @@ max_memory = 20000    # Max size of memory
 input_dim = 180
 output_dim = 2
 
+def reward_function(x):
+    if x > 0.8:
+        return 100
+    return x
+
+
 def create_q_network(input_dim, output_dim):
     model = Sequential([
         Input(shape=(input_dim,)),
         Dense(128, activation='relu'),
-        Dense(128, activation='relu'),
-        Dense(64, activation='relu'),
-        Dense(16, activation='relu'),
+        Dense(32, activation='relu'),
         Dense(output_dim, activation='linear')
     ])
     model.compile(optimizer="adam", loss='mse')
@@ -60,14 +64,24 @@ def play(count_plays, see_play = False, print_qvalues = False):
     for iteration in range(count_plays):
         
         new_play = []
+        frames_last_jump = 100
+
         env.reset()
         last_obs = np.zeros(input_dim)
 
         while True:
             
-            action = get_action(last_obs, print_qvalues)
+            action = 0
+            frames_last_jump += 1
+
+            if frames_last_jump > 15:
+                action = get_action(last_obs, print_qvalues)
+
+            if action == 1:
+                frames_last_jump = 0
 
             obs, reward, terminated, _, info = env.step(action)
+            reward = reward_function(reward)
             last_obs = obs
 
             if len(new_play) > 0:
@@ -145,17 +159,19 @@ def train(nr_interations, nr_trains):
         print(f'epsilon: {epsilon}')
         
         if i%10 == 0:
-            q_network.save("lidar_model.keras")
+            q_network.save("lidar_model_small.keras")
 
-    q_network.save("lidar_model.keras")
+    q_network.save("lidar_model_small.keras")
 
 
 
-#play(50)
-#train(100, 10)
+
+
+#play(20)
+#train(30, 10)
 #epsilon = 0
 #play(5, True, True)
 
-q_network = load_model("lidar_model.keras")
+q_network = load_model("lidar_model_small.keras")
 epsilon = 0
-play(5, True, True)
+play(20, True, True)
