@@ -74,7 +74,7 @@ def play(count_plays, see_play = False, print_qvalues = False):
             action = 0
             frames_last_jump += 1
 
-            if frames_last_jump > 15:
+            if frames_last_jump > 10:
                 action = get_action(last_obs, print_qvalues)
 
             if action == 1:
@@ -147,7 +147,8 @@ def train(nr_interations, nr_trains):
         for j in range(nr_trains):
             train_q_network()
         
-        play(10)
+        if i%10 == nr_interations:
+            play(10)
 
         if len(memory) > max_memory:
             random.shuffle(memory)
@@ -168,10 +169,10 @@ def train(nr_interations, nr_trains):
 
 
 #play(20)
-#train(30, 10)
+#train(100, 50)
 #epsilon = 0
 #play(5, True, True)
 
-q_network = load_model("lidar_model_small.keras")
+q_network = load_model("lidar_model_small_colab2.keras")
 epsilon = 0
 play(20, True, True)
